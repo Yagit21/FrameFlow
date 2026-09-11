@@ -1,40 +1,78 @@
-import cv2
 import mediapipe as mp
+from mediapipe.tasks import python
+from mediapipe.tasks.python import vision
+from mediapipe.tasks.python import BaseOptions
+import cv2
 
-mp_pose = mp.solutions.pose
-pose = mp_pose.Pose()
 
-cap = cv2.VideoCapture(0)
+#MediaPipe pose landmark connections
+POSE_CONNECTIONS = [
+    (11, 13), (13, 15),
+    (12, 14), (14, 16),
+    (11, 12),
+    (11, 23), (12, 24),
+    (23, 24),
+    (23, 25), (25, 27),
+    (24, 26), (26, 28),
+    (27, 29), (29, 31),
+    (28, 30), (30, 32)
+]
 
 
-# while True:
+class PoseDetection:
 
-#     success, frame = cap.read()
+    def __init__(self):
 
-#     rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        #Set up the MediaPipe Pose Landmarker model
+        base_options = BaseOptions(
+            model_asset_path="comp_vision/pose_landmarker_full.task"
+        )
 
-#     results = pose.process(rgb)
+        options = vision.PoseLandmarkerOptions(
+            base_options=base_options,
+            running_mode=vision.RunningMode.IMAGE,
+            num_poses=1,
+            min_pose_detection_confidence=0.5,
+            min_pose_presence_confidence=0.5,
+            min_tracking_confidence=0.7
+        )
 
-#     if results.pose_landmarks:
-        
-#         for i, landmark in enumerate(results.pose_landmarks.landmark):
+        #Create the MediaPipe detector once
+        self.detector = vision.PoseLandmarker.create_from_options(options)
 
-#             print(i,
-#                 landmark.x,
-#                 landmark.y,
-#                 landmark.z,
-#                 landmark.visibility
-#             )
 
-#         mp.solutions.drawing_utils.draw_landmarks(
-#             frame,
-#             results.pose_landmarks,
-#             mp_pose.POSE_CONNECTIONS
-#         )
+    def process_frame(self, frame):
 
-#     cv2.imshow("Pose", frame)
+        #Changing BGR to RGB
+        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-#     if cv2.waitKey(1) == ord("q"):
-#         break
+        #Convert the OpenCV image into a MediaPipe Image
+        mp_image = mp.Image(
+            image_format=mp.ImageFormat.SRGB,
+            data=rgb
+        )
 
-# cap.release()
+        #Run MediaPipe pose detection
+        result = self.detector.detect(mp_image)
+
+        #Create a list to store the landmarks
+        landmarks = []
+
+        #Check whether MediaPipe detected a person
+        if result.pose_landmarks:
+
+            #Get the first detected person's landmarks
+            pose = result.pose_landmarks[0]
+
+            #Store all 33 landmarks
+            for index, lm in enumerate(pose):
+
+                landmarks.append({
+                    "index": index,
+                    "x": lm.x,
+                    "y": lm.y,
+                    "z": lm.z,
+                    "visibility": lm.visibility
+                })
+
+        return landmarks
