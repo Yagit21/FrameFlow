@@ -8,11 +8,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const stopButton = document.getElementById("stopButton");
     const statusText = document.getElementById("status");
 
-
+    //Webcam recording variables
     let stream;
     let recorder;
     let recordedChunks = [];
-        
+    
+    //Live Pose Tracking variables
+    let tracking = false;
+    let lastFrameTime = 0;
+
+    //Canvas used to capture indiviual webcam frames
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d");
 
     
 
@@ -34,9 +41,23 @@ document.addEventListener("DOMContentLoaded", () => {
             //Enabling the record button only after the user's camera is connected
             recordButton.disabled = false;
             statusText.textContent = "Camera connected."; 
+
+            //Start live pose tracking
+            tracking = true;
+            statusText.textContent = "Starting pose tracking";
     
         //Checking actucal camera resolution
         console.log("Camera resolution:", video.videoWidth, "x", video.videoHeight);
+
+        //Ensure the video is playing
+        video.onloadeddata = function(){
+            //Setting a smaller resolution for frames
+            canvas.width = 640;
+            canvas.height = 480;
+
+            //Start capturing frames
+            requestAnimationFrame(processVideo);
+        };
 
         } catch (error) {
             //If user's camera does not connect successfully 
@@ -46,6 +67,58 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
     });
+
+    async function processVideo(timestamp){
+        //Stop tracking if it is disabled
+        if (!tracking){
+            return;
+        }
+
+        //Only sending a frame every 100ms (around 10 frames per second)
+        if (timestamp - lastFrameTime >= 100){
+            lastFrameTime = timestamp;
+
+            //Draw the current webcam frame onto the canvas
+            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            //Convert the canvas image into a JPEG file
+            canvas.toBlob(async (blob) => {
+                if (!blob){
+                    console.error("Could not create image blob.");
+                    return;
+                }
+                //Create a form containing the frame
+                const formData = new FormData();
+                formData.append("frame", blob, "frame.jpg");
+                
+                try{
+                    //Send the frame to Flask
+                    const response = await fetch(
+                        "/process-frame",
+                        {
+                            method: "POST",
+                            body: formData
+                        }
+                    );
+                    //Check whether Flask returned an error
+                    if (!response.ok){
+                        console.error("Frame processing failed:", response.status);
+                        return;
+                    }
+                    //Converting Flask's response into a JSON
+                    const result = await response.json();
+
+                    //Check how many landmarks MediaPipe found
+                    console.log("Landmarks detected:", result.landmarks.length);
+                } catch (error){
+                    console.error(error);
+                }
+
+            }, "image/jpeg", 0.8);
+        }
+
+        requestAnimationFrame(processVideo);
+    }
 
     //If user clicks the record button
     recordButton.addEventListener("click", () => {

@@ -1,10 +1,15 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from .models import User, Project, Character, Recording
+from comp_vision.pose import PoseDetection
 import uuid
 from . import db
 import os
+import cv2
+import numpy as np
 
 routes = Blueprint("routes", __name__)
+
+pose_detector = PoseDetection()
 
 @routes.route("/")
 def index():
@@ -107,4 +112,41 @@ def create_project():
         "message": "Project created successfully.",
         "project_id": project.id
     })
-    
+
+@routes.route("/process-frame", methods=["POST"])
+def process_frame():
+
+    #Check that the user is logged in
+    if "user_id" not in session:
+        return jsonify({"message": "You must be logged in."}), 401
+
+    #Check that a frame was included in the request
+    if "frame" not in request.files:
+        return jsonify({"message": "No frame received."}), 400
+
+    #Get the uploaded frame
+    frame_file = request.files["frame"]
+
+    #Read the uploaded file into memory
+    file_bytes = np.frombuffer(
+        frame_file.read(),
+        np.uint8
+    )
+
+    #Decode the JPEG into an OpenCV image
+    frame = cv2.imdecode(
+        file_bytes,
+        cv2.IMREAD_COLOR
+    )
+
+    #Make sure OpenCV successfully decoded the frame
+    if frame is None:
+        return jsonify({"message": "Could not decode frame."}), 400
+
+    #Run MediaPipe pose detection
+    landmarks = pose_detector.process_frame(frame)
+
+    #Return the landmarks to the browser
+    return jsonify({
+        "landmarks": landmarks
+    }) 
