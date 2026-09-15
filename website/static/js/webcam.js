@@ -56,10 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
         video.onloadeddata = function(){
             //Setting a smaller resolution for frames
             processingCanvas.width = 640;
-            processingCanvas.height = 480;
+            processingCanvas.height = 360;
 
             poseCanvas.width = 640;
-            poseCanvas.height = 480;
+            poseCanvas.height = 360;
 
             //Start capturing frames
             requestAnimationFrame(processVideo);
