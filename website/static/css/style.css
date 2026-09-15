@@ -1,0 +1,18 @@
+.webcam-container {
+    position: relative;
+    width: 640px;
+    height: 480px;
+}
+
+#webcam,
+#poseCanvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 640px;
+    height: 480px;
+}
+
+#poseCanvas {
+    pointer-events: none;
+}

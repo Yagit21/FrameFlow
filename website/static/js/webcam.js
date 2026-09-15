@@ -16,11 +16,14 @@ document.addEventListener("DOMContentLoaded", () => {
     //Live Pose Tracking variables
     let tracking = false;
     let lastFrameTime = 0;
+    let processingFrame = false;
 
-    //Canvas used to capture indiviual webcam frames
-    const canvas = document.createElement("canvas");
-    const context = canvas.getContext("2d");
 
+    const poseCanvas = document.getElementById("poseCanvas");
+    const poseContext = poseCanvas.getContext("2d");
+
+    const processingCanvas = document.getElementById("processingCanvas");
+    const processingContext = processingCanvas.getContext("2d");
     
 
     //When the user clicks the start button
@@ -52,8 +55,11 @@ document.addEventListener("DOMContentLoaded", () => {
         //Ensure the video is playing
         video.onloadeddata = function(){
             //Setting a smaller resolution for frames
-            canvas.width = 640;
-            canvas.height = 480;
+            processingCanvas.width = 640;
+            processingCanvas.height = 480;
+
+            poseCanvas.width = 640;
+            poseCanvas.height = 480;
 
             //Start capturing frames
             requestAnimationFrame(processVideo);
@@ -68,23 +74,90 @@ document.addEventListener("DOMContentLoaded", () => {
 
     });
 
+    function drawPose(landmarks) {
+
+        //Clear the previous skeleton
+        poseContext.clearRect(0, 0, poseCanvas.width, poseCanvas.height);
+
+        //If there are no landmarks, don't draw anything
+        if (!landmarks || landmarks.length === 0) {
+            return;
+        }
+        //Taking the width and the height of the HTML canvas
+        const w = poseCanvas.width;
+        const h = poseCanvas.height;
+
+        //Draw joints
+        for (const lm of landmarks) { //Looping through every coordinate in the list
+            //Converting each coordinate into a pixel coordinate (for instance if the coordinate is 0.5 and the pixel is 1280 wide the coordinate is 0.5 * 1280)
+            const x = lm.x * w;
+            const y = lm.y * h;
+            //Starting a new shape path
+            poseContext.beginPath();
+            poseContext.arc(x, y, 5, 0, 2 * Math.PI); //Creating a small circle at the joint coordinate
+            poseContext.fillStyle = "lime"; //Colour of circle
+            poseContext.fill();
+        }
+
+        //Landmark connections
+        const connections = [
+            [11, 13], [13, 15],
+            [12, 14], [14, 16],
+            [11, 12],
+            [11, 23], [12, 24],
+            [23, 24],
+            [23, 25], [25, 27],
+            [24, 26], [26, 28],
+            [27, 29], [29, 31],
+            [28, 30], [30, 32]
+        ];
+
+        //Draw skeleton
+        poseContext.strokeStyle = "magenta"; //Line colour is magneta
+        poseContext.lineWidth = 3;
+
+        for (const [start, end] of connections) { //Looping through each coordinate pair
+
+            if (
+                start >= landmarks.length ||
+                end >= landmarks.length //Skipping the line if it is not there
+            ) {
+                continue;
+            }
+            //Finding the start and end pixel coordinate of the line
+            const x1 = landmarks[start].x * w;
+            const y1 = landmarks[start].y * h;
+
+            const x2 = landmarks[end].x * w;
+            const y2 = landmarks[end].y * h;
+            //Creating a line that connects the two coordinates
+            poseContext.beginPath();
+            poseContext.moveTo(x1, y1);
+            poseContext.lineTo(x2, y2);
+            poseContext.stroke();
+        }
+    }
+
     async function processVideo(timestamp){
         //Stop tracking if it is disabled
         if (!tracking){
             return;
         }
 
-        //Only sending a frame every 100ms (around 10 frames per second)
-        if (timestamp - lastFrameTime >= 100){
+        //Only sending a frame every 200ms (around 5 frames per second)
+        if (timestamp - lastFrameTime >= 200 &&
+            !processingFrame
+        ){
             lastFrameTime = timestamp;
-
+            processingFrame = true;
             //Draw the current webcam frame onto the canvas
-            context.drawImage(video, 0, 0, canvas.width, canvas.height);
+            processingContext.drawImage(video, 0, 0, processingCanvas.width, processingCanvas.height);
 
             //Convert the canvas image into a JPEG file
-            canvas.toBlob(async (blob) => {
+            processingCanvas.toBlob(async (blob) => {
                 if (!blob){
                     console.error("Could not create image blob.");
+                    processingFrame = false;
                     return;
                 }
                 //Create a form containing the frame
@@ -110,9 +183,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
                     //Check how many landmarks MediaPipe found
                     console.log("Landmarks detected:", result.landmarks.length);
+                    
+                    drawPose(result.landmarks);
+
                 } catch (error){
                     console.error(error);
+                } finally {
+                    processingFrame = false; //Ensuring the next frame can only be sent after the previous one is finished
                 }
+
 
             }, "image/jpeg", 0.8);
         }
@@ -197,6 +276,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     //Event for when the stop button is clicked
     stopButton.addEventListener("click", () => {
+
+        //Stop sending frames to Flask route
+        tracking = false; 
+
         //Stoping the recording 
         recorder.stop();
         //Disabling the stop button and enabling the record button
@@ -214,18 +297,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
         formData.append("video", blob, "recording.webm"); //Assigning the binary video data (blob) to the form with the key name 'video' and the name of the file 'recording.webm'
 
-        //Sending a POST request to the endpoint /upload-recording and awaiting a response
-        const response = await fetch(
-            "/upload-recording",
-            {
-                method: "POST",
-                body: formData
-            }
-        );
-        //Parse the server as an await JSON response
-        const result = await response.json();
+        try {
+            //Sending a POST request to the endpoint /upload-recording and awaiting a response
+            const response = await fetch(
+                "/upload-recording",
+                {
+                    method: "POST",
+                    body: formData
+                }
+            );
+            //Parse the server as an await JSON response
+            const result = await response.json();
 
-        statusText.textContent = result.message;
+            if (!response.ok) {
+                throw new Error(
+                    result.message || "Upload failed."
+                );
+            }
+
+            console.log("Upload successful:", result);
+            
+
+            statusText.textContent = result.message;
+        } catch (error) {
+            console.error("Recording upload failed:", error); //Debugging (incase of failure)
+            statusText.textContent = "Recording upload failed.";
+        }
 
     }
 });

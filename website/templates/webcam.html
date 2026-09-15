@@ -4,8 +4,10 @@
 
 <h1>Motion Capture</h1>
 
-<div>
+<div class="webcam-container">
     <video id="webcam" autoplay playsinline muted width="640"></video>
+    <canvas id="poseCanvas" width="640" height="480"></canvas>
+    <canvas id="processingCanvas" width="640" height="480" style="display: none;"></canvas>
 </div>
 
 <button id="startButton">

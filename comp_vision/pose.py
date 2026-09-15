@@ -47,10 +47,7 @@ class PoseDetection:
         rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
         #Convert the OpenCV image into a MediaPipe Image
-        mp_image = mp.Image(
-            image_format=mp.ImageFormat.SRGB,
-            data=rgb
-        )
+        mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
 
         #Run MediaPipe pose detection
         result = self.detector.detect(mp_image)
@@ -76,3 +73,30 @@ class PoseDetection:
                 })
 
         return landmarks
+    
+    # def draw_pose(self, frame, landmarks): #Taking the frame and the list of landmarks
+        
+    #     if not landmarks: #If no landmarks were detected return the original frame
+    #         return frame
+        
+    #     #Getting the height and the width of the frame
+    #     h, w, _ = frame.shape
+        
+    #     #Draw joints (with the dictionary's syntax lm['x'])
+    #     for lm in landmarks: #Iterating through each 33 landmarks
+    #         #Converting each coordinate into a pixel coordinate (for instance if the coordinate is 0.5 and the pixel is 1280 wide the coordinate is 0.5 * 1280)
+    #         x = int(lm['x'] * w)
+    #         y = int(lm['y'] * h)
+    #         cv2.circle(frame, (x, y), 5, (0, 255, 0), -1) #Using OpenCv to draw a solid dot on the center (x,y) with a radius of 5, green and filled
+            
+    #     #Draw skeleton (with the dictionary's syntax landmarks[start]['x'])
+    #     for start, end in POSE_CONNECTIONS: #Looping through the pose_connection list of pairs 
+    #         if start < len(landmarks) and end < len(landmarks): #Ensuring the landmarks exist
+    #             #Converting coordinates again
+    #             x1 = int(landmarks[start]['x'] * w)
+    #             y1 = int(landmarks[start]['y'] * h)
+    #             x2 = int(landmarks[end]['x'] * w)
+    #             y2 = int(landmarks[end]['y'] * h)
+    #             cv2.line(frame, (x1, y1), (x2, y2), (255, 0, 255), 3) #Creating a line between the two joints of purple colour with thickness of 3
+                
+    #     return frame

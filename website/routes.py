@@ -128,16 +128,10 @@ def process_frame():
     frame_file = request.files["frame"]
 
     #Read the uploaded file into memory
-    file_bytes = np.frombuffer(
-        frame_file.read(),
-        np.uint8
-    )
+    file_bytes = np.frombuffer(frame_file.read(), np.uint8)
 
     #Decode the JPEG into an OpenCV image
-    frame = cv2.imdecode(
-        file_bytes,
-        cv2.IMREAD_COLOR
-    )
+    frame = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)
 
     #Make sure OpenCV successfully decoded the frame
     if frame is None:
@@ -145,8 +139,13 @@ def process_frame():
 
     #Run MediaPipe pose detection
     landmarks = pose_detector.process_frame(frame)
+    
 
     #Return the landmarks to the browser
-    return jsonify({
-        "landmarks": landmarks
-    }) 
+    return jsonify({"landmarks": landmarks}) 
+
+@routes.route("/orb-keypoints", methods=["POST"])
+def orb_keypoints():
+    file = request.files['frame'].read()
+    np_img = np.frombuffer(file, np.uint8)
+    img = cv2.imdecode(np_img, cv2.IMREAD_GRAYSCALE)
