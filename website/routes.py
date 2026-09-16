@@ -1,6 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from .models import User, Project, Character, Recording
 from comp_vision.pose import PoseDetection
+from comp_vision.camera_motion import track_camera
 import uuid
 from . import db
 import os
@@ -139,13 +140,10 @@ def process_frame():
 
     #Run MediaPipe pose detection
     landmarks = pose_detector.process_frame(frame)
-    
+    #Converting the frame to a gray image
+    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+    #Finding the movement of the camera throughout frames
+    camera_points = track_camera(gray)
 
     #Return the landmarks to the browser
     return jsonify({"landmarks": landmarks}) 
-
-@routes.route("/orb-keypoints", methods=["POST"])
-def orb_keypoints():
-    file = request.files['frame'].read()
-    np_img = np.frombuffer(file, np.uint8)
-    img = cv2.imdecode(np_img, cv2.IMREAD_GRAYSCALE)
