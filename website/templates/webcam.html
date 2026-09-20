@@ -1,28 +1,121 @@
 {% extends "base.html" %}
 
+{% block title %}Motion Capture | FrameFlow{% endblock %}
+
 {% block content %}
 
-<h1>Motion Capture</h1>
+<div class="webcam-page">
 
-<div class="webcam-container">
-    <video id="webcam" autoplay playsinline muted width="640"></video>
-    <canvas id="poseCanvas" width="640" height="480"></canvas>
-    <canvas id="processingCanvas" width="640" height="480" style="display: none;"></canvas>
+    <div class="page-header">
+
+        <h1>Motion Capture</h1>
+
+        <p>
+            Record your movement using your webcam.
+        </p>
+
+    </div>
+
+
+    <div class="webcam-layout">
+
+
+        <!-- Webcam -->
+
+        <div class="card webcam-card">
+
+            <div class="webcam-container">
+
+                <video id="webcam" autoplay playsinline muted></video>
+
+                <canvas id="poseCanvas" width="640" height="360"></canvas>
+
+                <canvas id="processingCanvas" width="640" height="360" style="display: none;"></canvas>
+
+            </div>
+
+
+            <div class="webcam-controls">
+
+                <button id="startButton" class="btn btn-primary">
+                    Start Camera
+                </button>
+
+
+                <button id="recordButton" class="btn btn-secondary" disabled>
+                    Start Recording
+                </button>
+
+
+                <button id="stopButton" class="btn btn-secondary" disabled>
+                    Stop Recording
+                </button>
+
+            </div>
+
+
+            <p id="status" class="status">
+                Camera not connected.
+            </p>
+
+        </div>
+
+
+        <!-- Webcam Capture information -->
+
+        <div class="card">
+
+            <div class="card-title">
+                Capture Settings
+            </div>
+
+            <p class="card-description">
+                Your webcam will be used to track body
+                movement and camera movement.
+            </p>
+
+
+            <br>
+
+
+            <div class="card-title">
+                Camera
+            </div>
+
+            <p class="card-description">
+                1280 × 720
+            </p>
+
+
+            <br>
+
+
+            <div class="card-title">
+                Pose Detection
+            </div>
+
+            <p class="card-description">
+                MediaPipe Pose
+            </p>
+
+
+            <br>
+
+
+            <div class="card-title">
+                Camera Tracking
+            </div>
+
+            <p class="card-description">
+                ORB + Lucas–Kanade
+            </p>
+
+        </div>
+
+    </div>
+
 </div>
 
-<button id="startButton">
-    Start Camera
-</button>
-
-<button id="recordButton" disabled>
-    Start Recording
-</button>
-
-<button id="stopButton" disabled>
-    Stop Recording
-</button>
-
-<p id="status"></p>
 
 <script src="{{ url_for('static', filename='js/webcam.js') }}"></script>
 

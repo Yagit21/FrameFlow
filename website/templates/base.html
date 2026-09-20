@@ -3,24 +3,149 @@
 <html>
 
 <head>
-    <title>Motion Capture</title>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        {% block title %}FrameFlow{% endblock %}
+    </title>
+
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
 </head>
 
 <body>
+<!--If a user is logged in-->
+{% if session.get("user_id") %}
 
-<nav>
+    <div class="app-shell">
+        
+        <!-- Mobile header -->
+        <header class="mobile-header">
+            <div class="logo">
+                Frame<span>Flow</span>
+            </div>
+            <button class="mobile-menu-button" id="mobileMenuButton">
+                ☰
+            </button>
+        </header>
 
-<a href="{{ url_for('routes.index') }}">Home</a>
 
-<a href="{{ url_for('routes.webcam') }}">Webcam</a>
+        <!-- Sidebar -->
+        <aside class="sidebar" id="sidebar">
 
-<a href="{{ url_for('auth.account') }}">Account</a>
+            <div class="sidebar-header">
+                <div class="sidebar-logo">
+                    Frame<span>Flow</span>
+                </div>
+            </div>
 
-</nav>
 
+            <nav class="sidebar-nav">
+
+                <a href="{{ url_for('routes.index') }}" class="sidebar-link">
+                    <span class="sidebar-icon">⌂</span>
+                    <span>Dashboard</span>
+                </a>
+
+
+                <a href="{{ url_for('routes.webcam') }}" class="sidebar-link">
+                    <span class="sidebar-icon">◉</span>
+                    <span>Motion Capture</span>
+                </a>
+
+                <!--Eventually I will change to the project route page-->
+                <a href="#" class="sidebar-link">
+                    <span class="sidebar-icon">▣</span>
+                    <span>Projects</span>
+                </a>
+
+                <!--Eventually I will change to the character route page-->
+                <a href="#" class="sidebar-link">
+                    <span class="sidebar-icon">◆</span>
+                    <span>Characters</span>
+                </a>
+
+            </nav>
+
+
+            <div class="sidebar-bottom">
+                <a href="{{ url_for('auth.account') }}" class="sidebar-link">
+                    <span class="sidebar-icon">⚙</span>
+                    <span>Account</span>
+                </a>
+
+                <a href="#" class="sidebar-link">
+                    <span class="sidebar-icon">?</span>
+                    <span>Help</span>
+                </a>
+            </div>
+
+        </aside>
+
+        <!--Where the main app content will go-->
+        <main class="app-content">
+
+<!--User isn't logged in-->
+{% else %}
+
+    <nav class="public-nav">
+
+        <a href="{{ url_for('routes.index') }}" class="logo">
+            Frame<span>Flow</span>
+        </a>
+
+        <!--Information about the application which I have yet to add-->
+        <div class="public-nav-links">
+            <a href="{{ url_for('routes.index') }}">Home</a>
+            <a href="#">How it works</a>
+            <a href="#">About</a>
+        </div>
+
+        <!--Ways to create account and login-->
+        <div class="nav-actions">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">
+                Sign In
+            </a>
+
+            <a href="{{ url_for('auth.signup') }}" class="btn btn-primary">
+                Get Started
+            </a>
+        </div>
+
+    </nav>
+
+
+{% endif %}
+
+<!--Where the content will be depending on the HTML template-->
 {% block content %}
 {% endblock %}
+
+
+{% if session.get("user_id") %}
+        </main>
+    </div>
+{% endif %}
+
+
+<script>
+    //Defining the variables (sidebar and the menu button for the sidebar)
+    const mobileMenuButton = document.getElementById("mobileMenuButton");
+    const sidebar = document.getElementById("sidebar");
+
+    //If the elements are there 
+    if (mobileMenuButton && sidebar) {
+        //When someone clicks the menu button 
+        mobileMenuButton.addEventListener("click", () => {
+            sidebar.classList.toggle("open"); //The sidebar opens onto the screen
+        });
+    }
+
+</script>
+
 
 </body>
 

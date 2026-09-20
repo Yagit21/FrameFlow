@@ -1,49 +1,69 @@
 {% extends "base.html" %}
 
+{% block title %}Create Account | FrameFlow{% endblock %}
+
 {% block content %}
 
-<h1>Create Account</h1>
+<div class="form-container card">
 
-<form method="POST">
-    <!--Displaying flash messages-->
-    {% with messages = get_flashed_messages()%}
-        {% if messages%}
-            {% for message in messages%}
-                <a>{{message}}</a>
+    <h1>Create your account</h1>
+
+    <p class="form-subtitle">
+        Start creating motion-captured animations with FrameFlow.
+    </p>
+
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+                <p class="status">{{ message }}</p>
             {% endfor %}
         {% endif %}
     {% endwith %}
 
-    <label>Username</label>
 
-    <input type="text" name="username" required>
+    <form method="POST">
 
-
-    <label>Email</label>
-
-    <input type="email" name="email" required>
-
-    <label>Password</label>
-    <input type="password" name="password" required>
-
-    <label>Confirm Password</label>
-
-    <input type="password" name="confirm_password" required>
+        <div class="form-group">
+            <label>Username</label>
+            <input type="text" name="username" required>
+        </div>
 
 
-    <button type="submit">
-        Sign Up
-    </button>
+        <div class="form-group">
+            <label>Email</label>
+            <input type="email" name="email" required>
+        </div>
 
-</form>
 
-<p>
-    Already have an account?
+        <div class="form-group">
+            <label>Password</label>
+            <input type="password" name="password" required>
+        </div>
 
-    <a href="{{ url_for('auth.login') }}">
-        Login
-    </a>
 
-</p>
+        <div class="form-group">
+            <label>Confirm Password</label>
+            <input type="password" name="confirm_password" required>
+        </div>
+
+
+        <button type="submit" class="btn btn-primary">
+            Create Account
+        </button>
+
+    </form>
+
+
+    <p class="form-footer">
+
+        Already have an account?
+
+        <a href="{{ url_for('auth.login') }}">
+            Login
+        </a>
+
+    </p>
+
+</div>
 
 {% endblock %}
