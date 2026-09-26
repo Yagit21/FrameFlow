@@ -1,9 +1,10 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
-from .models import User, Project, Character, Recording
+from .models import User, Project, Character, Recording, PoseFile, CameraFile
 from comp_vision.pose import PoseDetection
 from comp_vision.camera_motion import track_camera
 import uuid
 from . import db
+import json
 import os
 import cv2
 import numpy as np
@@ -89,8 +90,6 @@ def create_project():
     if "user_id" not in session:
         return jsonify({"message": "Please log in first."}), 401
     
-    data = request.get_json()
-    
     
     #Getting user's info
     user_id = session["user_id"]
@@ -124,6 +123,12 @@ def process_frame():
     #Check that a frame was included in the request
     if "frame" not in request.files:
         return jsonify({"message": "No frame received."}), 400
+    
+    #Getting user's info
+    user_id = session["user_id"]
+    data = request.get_json()
+    project_name = data.get("project_name")
+    character_id = data.get("character_id")
 
     #Get the uploaded frame
     frame_file = request.files["frame"]
@@ -144,6 +149,46 @@ def process_frame():
     gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
     #Finding the movement of the camera throughout frames
     camera_points = track_camera(gray)
+    
+    #Create unique ID for filenames
+    unique_id = str(uuid.uuid4())
+    landmark_file_name = "landmark_%s.json" % (unique_id)
+    camera_pts_file_name = "cam_pts_%s.json" % (unique_id)
+    
+    #Saving the landmarks and camera points to a JSON file
+    with open(landmark_file_name, "w", encoding="utf-8") as file:
+        json.dump(landmarks, file, indent=4)
+        
+    #Get the Flask application's root directory
+    project_root = routes.root_path
+    
+    #Go up from the website folder to FreeFlow
+    project_root = os.path.dirname(project_root)
 
+    #Creating a pose folder path for the user
+    folder_path = os.path.join(project_root, "data", "json", "user_%s_pose" % (user_id))
+    os.makedirs(folder_path, exist_ok=True)
+    #Complete the video file path
+    absolute_pose_path = os.path.join(folder_path, landmark_file_name)   
+    
+    with open(camera_pts_file_name, "w", encoding="utf-8") as file:
+        json.dump(camera_points, file, indent=4)
+    
+    #Creating a pose folder path for the user
+    folder_path = os.path.join(project_root, "data", "json", "user_%s_camera" % (user_id))
+    os.makedirs(folder_path, exist_ok=True)
+    #Complete the video file path
+    absolute_cam_path = os.path.join(folder_path, camera_pts_file_name)  
+        
+    #Saving the pose file
+    pose_file = PoseFile(user_id=user_id, project_id=1, json_path=absolute_pose_path) #Change when project is added
+    db.session.add(pose_file)
+    db.session.commit()
+    
+    #Saving the camera file
+    camera_file = CameraFile(user_id=user_id, project_id=1, json_path=absolute_cam_path) #Change when project is added
+    db.session.add(camera_file)
+    db.session.commit()
+    
     #Return the landmarks to the browser
     return jsonify({"landmarks": landmarks}) 

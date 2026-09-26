@@ -192,6 +192,12 @@ class PoseFile(db.Model):
         db.Integer,
         primary_key=True
     )
+    
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
+    )
 
     project_id = db.Column(
         db.Integer,
@@ -218,6 +224,12 @@ class CameraFile(db.Model):
     id = db.Column(
         db.Integer,
         primary_key=True
+    )
+
+    user_id = db.Column(
+        db.Integer,
+        db.ForeignKey("users.id"),
+        nullable=False
     )
 
     project_id = db.Column(
